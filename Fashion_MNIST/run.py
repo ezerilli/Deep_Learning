@@ -4,7 +4,7 @@ from mini_vgg import MiniVGG
 import cv2
 import os
 import numpy as np
-# from tqdm import tqdm
+from tqdm import tqdm
 
 VID_DIR = 'videos/'
 OUT_DIR = 'images/'
@@ -226,35 +226,35 @@ if __name__ == "__main__":
     batch_size = 64  # sizes of the batches to compute
     epochs = 50  # number of epochs to run
 
-    # Import Fashion MNIST datasert without data augmentation and with a 10% validation set
+    # Import Fashion MNIST datasert with no data augmentation and with a 10% validation set
     fashion_mnist = FashionMNIST(show=False, val_split=0.1, rotation=0, shift=0., brightness=None, flip=False)
 
-    # Train and test a VGG2 model
+    # Train and test a MiniVGG4 model
     print('\n\n')
     print('-' * 50)
     print('VGG2')
-    vgg2 = MiniVGG(conv_layers=2, input_shape=fashion_mnist.x_train.shape[1:], load_best_weights=False,
-                   name='vgg2', num_classes=fashion_mnist.num_classes)
-    vgg2.train(fashion_mnist, epochs=epochs, batch_size=batch_size)
+    vgg2 = MiniVGG(conv_layers=2, input_shape=fashion_mnist.x_train.shape[1:], load_best_weights=True,
+                   name='minivgg4', num_classes=fashion_mnist.num_classes)
+    # vgg2.train(fashion_mnist, epochs=epochs, batch_size=batch_size)  # uncomment to execute training
     vgg2.test(fashion_mnist, batch_size=batch_size)
 
-    # Train and test a VGG4 model
+    # Train and test a MiniVGG6 model
     print('\n\n')
     print('-' * 50)
     print('VGG4')
-    vgg4 = MiniVGG(conv_layers=4, input_shape=fashion_mnist.x_train.shape[1:], load_best_weights=False,
-                   name='vgg4', num_classes=fashion_mnist.num_classes)
-    vgg4.train(fashion_mnist, epochs=epochs, batch_size=batch_size)
+    vgg4 = MiniVGG(conv_layers=4, input_shape=fashion_mnist.x_train.shape[1:], load_best_weights=True,
+                   name='minivgg6', num_classes=fashion_mnist.num_classes)
+    # vgg4.train(fashion_mnist, epochs=epochs, batch_size=batch_size)  # uncomment to execute training
     vgg4.test(fashion_mnist, batch_size=batch_size)
 
-    # Train and test a VGG4 model with data augmentation (horizontal flips only)
+    # Train and test a MiniVGG6 model with data augmentation (horizontal flips only)
     print('\n\n')
     print('-' * 50)
     print('VGG4 Augmented Dataset')
     fashion_mnist.set_data_augmentation(rotation=0, shift=0., brightness=None, flip=True)
-    vgg4_augmented = MiniVGG(conv_layers=4, input_shape=fashion_mnist.x_train.shape[1:], load_best_weights=False,
-                             name='vgg4_augmented', num_classes=fashion_mnist.num_classes)
-    vgg4_augmented.train(fashion_mnist, epochs=epochs, batch_size=batch_size)
+    vgg4_augmented = MiniVGG(conv_layers=4, input_shape=fashion_mnist.x_train.shape[1:], load_best_weights=True,
+                             name='minivgg6_augmented', num_classes=fashion_mnist.num_classes)
+    # vgg4_augmented.train(fashion_mnist, epochs=epochs, batch_size=batch_size)  # uncomment to execute training 
     vgg4_augmented.test(fashion_mnist, batch_size=batch_size)
 
     # process_video(video_file="my_video.mp4", cnn=fashion_net)

@@ -3,6 +3,7 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
 from sklearn.metrics import classification_report
 
@@ -35,7 +36,7 @@ class MiniVGG:
         # Define the model name, the path where to save the best weights,
         # the number of convolutional layers, the input shape and the number of classes
         self.name = name
-        self.best_weights_path = CHECK_DIR + name + 'weights_best.hdf5'
+        self.best_weights_path = CHECK_DIR + name + '_weights_best.hdf5'
         self.conv_layers = conv_layers
         self.input_shape = input_shape
         self.num_classes = num_classes
@@ -218,8 +219,11 @@ class MiniVGG:
                                                                  verbose=1)
 
         # Generate classification report
+        start = time.time()
         predictions = self.model.predict(dataset.x_test / 255.)
+        print('\nPrediction time = {:.4f} ms'.format(1000 * (time.time() - start) / len(dataset.x_test)))
 
+        print('\nClassification report:')
         print(classification_report(dataset.y_test.argmax(axis=1),
                                     predictions.argmax(axis=1),
                                     target_names=dataset.classes,
