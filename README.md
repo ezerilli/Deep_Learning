@@ -53,10 +53,9 @@ In order to run the experiments, run:
 cd Fashion_MNIST
 python run_experiments.py
 ```
-Figures will show up progressively. It takes a while to perform all the experiments. By default, models training is 
-commented out and the script loads pre-trained weights and then assesses performances on the test set. However, training 
-plots have already been saved into the images directory. Theory, results and experiments are discussed in the 
-report.
+Figures will show up progressively. It takes a while to perform all the experiments. By default, models training is commented 
+out and the script loads pre-trained weights and then assesses performances on the test set. However, training plots have 
+already been saved into the images directory. Theory, results and experiments are discussed in the report.
 
 ### REFERENCES
 
