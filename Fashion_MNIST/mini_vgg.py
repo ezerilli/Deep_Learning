@@ -19,12 +19,12 @@ CHECK_DIR = 'checkpoints/'
 
 class MiniVGG:
 
-    def __init__(self, conv_layers=4, input_shape=(28, 28, 1), load_best_weights=False, name='miniVGG', num_classes=10):
+    def __init__(self, conv_layers=4, input_shape=(28, 28), load_best_weights=False, name='miniVGG', num_classes=10):
         """Initialize Class MiniVGG and build a VGG2 or VGG4 convolutional neural network model.
 
             Args:
                 conv_layers (int): 2 or 4, the number of convolutional layers to use.
-                input_shape (tuple): input shape of the model, (28, 28, 1) per default as in MNIST.
+                input_shape (tuple): input shape of the model, (28, 28) per default as in MNIST.
                 load_best_weights (bool): True if model best weights have to be loaded from the .hdf5 file.
                 name (string): name of the model.
                 num_classes (int): number of classes, 10 per default as in MNIST.
@@ -38,7 +38,7 @@ class MiniVGG:
         self.name = name
         self.best_weights_path = CHECK_DIR + name + '_weights_best.hdf5'
         self.conv_layers = conv_layers
-        self.input_shape = input_shape
+        self.input_shape = (input_shape[0], input_shape[1], 1)
         self.num_classes = num_classes
 
         # Build the model and compile it
@@ -165,45 +165,42 @@ class MiniVGG:
         self._plot_helper_(epochs, history, plot_type='loss', ylabel='Cross-Entropy Loss')
         self._plot_helper_(epochs, history, plot_type='accuracy', ylabel='Accuracy')
 
-    def predict(self, classes, input_image):
+    def predict(self, input_image):
         """Predict a single image.
 
             Args:
-                classes (list): classes names.
                 input_image (ndarray): input image to predict.
 
             Returns:
-                predicted_class (string): class predicted.
-                prediction_probability (float): probability of the prediction.
+                predictions (list): list of predicted probabilities.
             """
         print('\nPredict')
 
         # Make a copy of the input image
         image = np.copy(input_image)
 
-        # Convert to grayscale if the input shape require so
-        if self.input_shape[2] == 1:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # Convert to grayscale if required so
+        if len(image.shape) == 3:
+            if image.shape[2] == 3:
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
         # Resize image to match the input size
-        image = cv2.resize(image, dsize=(self.input_shape[0], self.input_shape[1]))
+        if image.shape[0] != self.input_shape[0] or image.shape[1] != self.input_shape[1]:
+            image = cv2.resize(image, dsize=(self.input_shape[0], self.input_shape[1]))
 
         # Rescale image and insert an empty dimension at the beginning for batch processing
         image = image.astype(np.float32) / 255.
         image = np.expand_dims(image, axis=0)
 
-        # Predict and compute the most probable class
-        predictions = self.model.predict(image)
-        predicted_index = predictions.argmax()
+        # Return predictions
+        return self.model.predict(image)[0]
 
-        return classes[predicted_index], predictions[predicted_index]
-
-    def test(self, dataset, batch_size=64):
+    def test(self, test_generator, test_steps):
         """Test the MiniVGG model.
 
             Args:
-                dataset (dataset class): dataset to test from that implements a Keras ImageGenerator.
-                batch_size (int): batch size.
+                test_generator (iterator): test images Keras ImageGenerator.
+                test_steps (int): number of steps to run the generator for.
 
             Returns:
                 test_loss (float): loss on the test set.
@@ -213,32 +210,48 @@ class MiniVGG:
         print('\nTest')
 
         # Test the dataset with a generator that generate batches of rescaled data from the dataset's test set
-        test_generator, test_steps = dataset.get_generator(batch_size=batch_size, subset='test')
         test_loss, test_accuracy = self.model.evaluate_generator(generator=test_generator,
                                                                  steps=test_steps,
                                                                  verbose=1)
 
-        # Generate classification report
-        start = time.time()
-        predictions = self.model.predict(dataset.x_test / 255.)
-        print('\nPrediction time = {:.4f} ms'.format(1000 * (time.time() - start) / len(dataset.x_test)))
-
-        print('\nClassification report:')
-        print(classification_report(dataset.y_test.argmax(axis=1),
-                                    predictions.argmax(axis=1),
-                                    target_names=dataset.classes,
-                                    digits=4))
-
         return test_loss, test_accuracy
 
-    def train(self, dataset, epochs=50, batch_size=64):
+    def test_report(self, x_test, y_test, classes):
+        """Test the MiniVGG model and print results.
+
+            Args:
+                x_test (ndarray): test images.
+                y_test (ndarray): test labels.
+                classes (list): list of classes names.
+
+            Returns:
+                None.
+            """
+
+        print('\nTest Report')
+
+        # Compute average inference time
+        start = time.time()
+        predictions = self.model.predict(x_test / 255.)
+        print('\nPrediction time = {:.4f} ms'.format(1000 * (time.time() - start) / len(x_test)))
+
+        # Generate classification report
+        print('\nClassification report:')
+        print(classification_report(y_test.argmax(axis=1),
+                                    predictions.argmax(axis=1),
+                                    target_names=classes,
+                                    digits=4))
+
+    def train(self, train_generator, val_generator, train_steps, val_steps, validation_split, epochs=50):
         """Train the MiniVGG model.
 
             Args:
-                dataset (dataset class): dataset to test from that implements a Keras ImageGenerator.
+                train_generator (iterator): dataset training generator.
+                val_generator (iterator): dataset validation generator.
+                train_steps (int): training steps to run the training generator for.
+                val_steps (int): validation steps to run the validation generator for.
+                validation_split (float): dataset validation_split.
                 epochs (int): epochs to run.
-                batch_size (int): batch size.
-
 
             Returns:
                 train_history (history object): training history.
@@ -247,7 +260,7 @@ class MiniVGG:
         print('\nTrain')
 
         # If a validation set is used, we can use ModelCheckpoint, ReduceLROnPlateau and eventually EarlyStopping
-        if dataset.validation_split > 0.:
+        if validation_split > 0.:
 
             # ModelCheckpoint is used to saved the weights of the model that report the best validation loss
             checkpoint = ModelCheckpoint(self.best_weights_path, monitor='val_loss', verbose=1,
@@ -269,9 +282,6 @@ class MiniVGG:
 
         # Train the dataset with a generator that generate batches of rescaled (and eventually augmented) data
         # from the dataset's training/validation set
-        train_generator, train_steps = dataset.get_generator(batch_size=batch_size, subset='training')
-        val_generator, val_steps = dataset.get_generator(batch_size=batch_size, subset='validation')
-
         train_history = self.model.fit_generator(generator=train_generator,
                                                  steps_per_epoch=train_steps,
                                                  validation_data=val_generator,

@@ -37,7 +37,7 @@ class FashionMNIST:
 
         # Classes labels
         self.num_classes = 10
-        self.classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
+        self.classes = ['T-shirt', 'Trouser', 'Pullover', 'Dress', 'Coat',
                         'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
         print('- training images shape : {}'.format(x_train.shape))
