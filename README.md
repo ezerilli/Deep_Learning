@@ -44,9 +44,9 @@ applications to clothing detection and recognition in real world images and vide
 The project consists of two parts: 
 
 - _experiment 1_, training and testing 3 different models (MiniVGG4, MiniVGG6 and MiniVGG6 with Data Augmentation ) and 
-producing corresponding accuracy/loss curves.
+producing corresponding accuracy/loss curves + generate subplot of test images with predictions.
 
-- _experiment 2_, clothing detection and recognition in real world images and videos (work in progress...).
+- _experiment 2_, clothing detection and recognition in real world images and videos (in progress...).
 
 In order to run the experiments, run:
 ```bash
